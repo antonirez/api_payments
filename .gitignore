@@ -1,0 +1,19 @@
+
+###> symfony/framework-bundle ###
+/.env.local
+/.env.local.php
+/.env.*.local
+/config/secrets/prod/prod.decrypt.private.php
+/public/bundles/
+/var/
+/vendor/
+###< symfony/framework-bundle ###
+
+# PHPUnit
+.phpunit.result.cache
+
+###> lexik/jwt-authentication-bundle ###
+# Claves JWT para desarrollo
+!/config/jwt/private.pem
+!/config/jwt/public.pem
+###< lexik/jwt-authentication-bundle ###
