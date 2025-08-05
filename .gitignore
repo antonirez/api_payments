@@ -1,8 +1,6 @@
-
 ###> symfony/framework-bundle ###
-/.env.local
-/.env.local.php
-/.env.*.local
+/.idea
+/.env.*
 /config/secrets/prod/prod.decrypt.private.php
 /public/bundles/
 /var/
@@ -13,7 +11,26 @@
 .phpunit.result.cache
 
 ###> lexik/jwt-authentication-bundle ###
-# Claves JWT para desarrollo
-!/config/jwt/private.pem
-!/config/jwt/public.pem
+/config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
+
+###> symfony/webpack-encore-bundle ###
+/node_modules/
+/public/build/
+npm-debug.log
+yarn-error.log
+###< symfony/webpack-encore-bundle ###
+
+###> symfony/phpunit-bridge ###
+/phpunit.xml
+###< symfony/phpunit-bridge ###
+
+###> symfony/asset-mapper ###
+/public/assets/
+/assets/vendor/
+###< symfony/asset-mapper ###
+
+###> friendsofphp/php-cs-fixer ###
+/.php-cs-fixer.php
+/.php-cs-fixer.cache
+###< friendsofphp/php-cs-fixer ###

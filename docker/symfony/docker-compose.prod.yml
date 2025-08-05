@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+    symfony:
+        build:
+            context: ../../
+            dockerfile: ./docker/symfony/dockerfile
+            args:
+                ENV: prod
+                APP_FOLDER: ${APP_FOLDER}
+        restart: always
+        volumes:
+            - "../../${APP_FOLDER}/config/jwt/:/var/www/html/config/jwt/"
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.${COMPOSE_PROJECT_NAME}_symfony.rule=Host(`api.tkt.oaro.net`) && PathRegexp(`/[a-z]{2}/v2/`)"
+            - "traefik.http.services.${COMPOSE_PROJECT_NAME}_symfony.loadbalancer.server.port=80"
+            - "traefik.http.routers.${COMPOSE_PROJECT_NAME}_symfony.entrypoints=http"
+#            - "traefik.http.routers.${COMPOSE_PROJECT_NAME}_symfony.tls=true"
+#            - "traefik.http.routers.${COMPOSE_PROJECT_NAME}_symfony.tls.certresolver=myresolver"
+
+networks:
+    default:
+        name: traefik
+        external: true

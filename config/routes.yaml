@@ -1,5 +1,8 @@
+login:
+    path: /v1/login
+    methods: [POST]
+
 controllers:
-    resource:
-        path: ../src/Controller/
-        namespace: App\Controller
+    resource: '../src/Controller/'
     type: attribute
+    prefix: /v1

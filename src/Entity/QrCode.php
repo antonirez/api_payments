@@ -2,26 +2,44 @@
 
 namespace App\Entity;
 
-use DateTimeImmutable;
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use App\Repository\QRCodeRepository;
 
-class QrCode
+/**
+ * QRCode.
+ */
+#[ORM\Table(name: 'qr_code')]
+#[ORM\Entity(repositoryClass: QRCodeRepository::class)]
+class QRCode
 {
-    private string $id;
-    private float $amount;
-    private string $currency;
-    private string $merchantId;
-    private DateTimeImmutable $expiresAt;
+    #[ORM\Column(name: 'id', type: 'guid')]
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
+    #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
+    #[Groups(['qr_code'])]
+    private ?int $id = null;
 
-    public function __construct(string $id, float $amount, string $currency, string $merchantId, DateTimeImmutable $expiresAt)
+    #[ORM\Column(type: 'float')]
+    #[Groups(['qr_code'])]
+    private float $amount;
+
+    #[ORM\Column(type: 'string', length: 3)]
+    #[Groups(['qr_code'])]
+    private string $currency;
+
+    #[ORM\Column(type: 'string')]
+    #[Groups(['qr_code'])]
+    private string $merchantId;
+
+    public function __construct(float $amount, string $currency, string $merchantId)
     {
-        $this->id = $id;
         $this->amount = $amount;
         $this->currency = $currency;
         $this->merchantId = $merchantId;
-        $this->expiresAt = $expiresAt;
     }
 
-    public function getId(): string
+    public function getId(): ?int
     {
         return $this->id;
     }
@@ -31,9 +49,23 @@ class QrCode
         return $this->amount;
     }
 
+    public function setAmount(float $amount): self
+    {
+        $this->amount = $amount;
+
+        return $this;
+    }
+
     public function getCurrency(): string
     {
         return $this->currency;
+    }
+
+    public function setCurrency(string $currency): self
+    {
+        $this->currency = $currency;
+
+        return $this;
     }
 
     public function getMerchantId(): string
@@ -41,22 +73,10 @@ class QrCode
         return $this->merchantId;
     }
 
-    public function getExpiresAt(): DateTimeImmutable
+    public function setMerchantId(string $merchantId): self
     {
-        return $this->expiresAt;
-    }
+        $this->merchantId = $merchantId;
 
-    /**
-     * @return array<string, mixed>
-     */
-    public function toPayload(): array
-    {
-        return [
-            'qrId' => $this->id,
-            'amount' => $this->amount,
-            'currency' => $this->currency,
-            'merchantId' => $this->merchantId,
-            'expiresAt' => $this->expiresAt->format(DATE_ATOM),
-        ];
+        return $this;
     }
 }

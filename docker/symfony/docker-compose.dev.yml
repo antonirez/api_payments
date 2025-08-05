@@ -1,0 +1,14 @@
+services:
+    symfony:
+        build:
+            context: ../../
+            dockerfile: ./docker/symfony/dockerfile
+            args:
+                ENV: dev
+        volumes:
+            - "../../${APP_FOLDER}:/var/www/html/"
+        ports:
+            - "8003:8003"
+        restart: always
+        extra_hosts:
+            - "host.docker.internal:host-gateway"

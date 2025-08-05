@@ -1,0 +1,95 @@
+ARG ENV
+
+#---------------------------------------------------------------------#
+
+FROM php:8.2-fpm-alpine3.20 as nginx_build
+WORKDIR /var/www/html
+ENTRYPOINT ["/init"]
+CMD []
+EXPOSE 80
+
+RUN apk add --no-cache icu-dev curl libpng-dev oniguruma-dev libxml2-dev zip unzip pcre-dev $PHPIZE_DEPS \
+&& pecl install redis \
+&& docker-php-ext-configure intl \
+&& docker-php-ext-install intl pdo_mysql mbstring exif pcntl bcmath gd \
+&& docker-php-ext-enable redis.so
+
+RUN apk add --no-cache libzip-dev \
+&& docker-php-ext-install zip
+RUN apk --no-cache add nginx
+COPY --from=node:18-alpine /usr/lib /usr/lib
+COPY --from=node:18-alpine /usr/local/share /usr/local/share
+COPY --from=node:18-alpine /usr/local/lib /usr/local/lib
+COPY --from=node:18-alpine /usr/local/include /usr/local/include
+COPY --from=node:18-alpine /usr/local/bin /usr/local/bin
+COPY --from=composer /usr/bin/composer /usr/bin/composer
+
+RUN npm update -g npm
+
+ARG S6_OVERLAY_VERSION=3.1.6.2
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz /tmp
+RUN tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-x86_64.tar.xz /tmp
+RUN tar -C / -Jxpf /tmp/s6-overlay-x86_64.tar.xz
+
+ARG ENV
+COPY ./docker/symfony/config/nginx.${ENV}.conf /etc/nginx/nginx.conf
+COPY ./docker/symfony/config/php.${ENV}.ini /usr/local/etc/php/php.ini
+
+COPY ./docker/symfony/config/s6 /etc/s6-overlay/s6-rc.d/
+RUN chmod +x /etc/s6-overlay/s6-rc.d/nginx/run \
+&& chmod +x /etc/s6-overlay/s6-rc.d/nginx/finish \
+&& chmod +x /etc/s6-overlay/s6-rc.d/php/run \
+&& chmod +x /etc/s6-overlay/s6-rc.d/php/finish
+
+#---------------------------------------------------------------------#
+
+FROM nginx_build as nginx_dev
+RUN apk --no-cache add bash nano
+
+FROM nginx_build as nginx_testing
+ARG APP_FOLDER
+COPY ./${APP_FOLDER} .
+RUN COMPOSER_ALLOW_SUPERUSER=1 composer install && npm install && php bin/console doctrine:schema:update --force
+RUN find . -exec chown www-data:www-data {} + \
+&& find . -type d -exec chmod 755 {} + \
+&& find . -type f -exec chmod 644 {} + \
+&& find ./bin -type f -exec chmod 755 {} +
+
+#---------------------------------------------------------------------#
+
+FROM nginx_build AS nginx_pre
+
+ARG APP_FOLDER
+COPY --chown=www-data:www-data ./${APP_FOLDER} .
+RUN find . -type d -exec chmod 755 {} + \
+&& find . -type f -exec chmod 644 {} + \
+&& find ./bin/* -type f -exec chmod 744 {} +
+RUN mkdir -p /var/www/.npm && chown -R www-data:www-data /var/www/.npm
+
+USER www-data
+RUN composer install --no-dev --optimize-autoloader
+RUN if [ -f package.json ]; then npm install; fi
+RUN php bin/console doctrine:schema:update --force
+USER root
+
+#---------------------------------------------------------------------#
+
+FROM nginx_build AS nginx_prod
+
+ARG APP_FOLDER
+COPY --chown=www-data:www-data ./${APP_FOLDER} .
+RUN find . -type d -exec chmod 755 {} + \
+&& find . -type f -exec chmod 644 {} + \
+&& find ./bin/* -type f -exec chmod 744 {} +
+RUN mkdir -p /var/www/.npm && chown -R www-data:www-data /var/www/.npm
+
+USER www-data
+RUN composer install --no-dev --optimize-autoloader
+RUN if [ -f package.json ]; then npm install; fi
+RUN php bin/console doctrine:schema:update --force
+USER root
+
+#---------------------------------------------------------------------#
+
+FROM nginx_${ENV}
