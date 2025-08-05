@@ -2,39 +2,39 @@
 
 namespace App\Service;
 
+use App\Entity\Payment;
+use App\Entity\QrCode;
+use App\Entity\UserBalance;
 use Symfony\Component\Uid\Uuid;
 
 class PaymentService
 {
-    /** @var array<string, array> */
+    /** @var array<string, QrCode> */
     private array $qrs = [];
 
-    /** @var array<string, float> */
+    /** @var array<string, UserBalance> */
     private array $balances = [];
+
+    /** @var array<string, Payment> */
+    private array $payments = [];
 
     public function createQR(float $amount, string $currency, string $merchantId): array
     {
         $qrId = Uuid::v4()->toRfc4122();
-        $expiresAt = (new \DateTimeImmutable('+5 minutes'))->format(DATE_ATOM);
-        $payload = [
-            'qrId' => $qrId,
-            'amount' => $amount,
-            'currency' => $currency,
-            'merchantId' => $merchantId,
-            'expiresAt' => $expiresAt,
-        ];
-        $this->qrs[$qrId] = $payload;
+        $expiresAt = new \DateTimeImmutable('+5 minutes');
+        $qr = new QrCode($qrId, $amount, $currency, $merchantId, $expiresAt);
+        $this->qrs[$qrId] = $qr;
 
         return [
             'qrId' => $qrId,
-            'qrCodeString' => json_encode($payload, JSON_THROW_ON_ERROR),
-            'expiresAt' => $expiresAt,
+            'qrCodeString' => json_encode($qr->toPayload(), JSON_THROW_ON_ERROR),
+            'expiresAt' => $expiresAt->format(DATE_ATOM),
         ];
     }
 
     public function getQR(string $qrId): ?array
     {
-        return $this->qrs[$qrId] ?? null;
+        return isset($this->qrs[$qrId]) ? $this->qrs[$qrId]->toPayload() : null;
     }
 
     public function confirmPayment(string $qrId, string $userId, string $signature): array
@@ -44,19 +44,25 @@ class PaymentService
             throw new \InvalidArgumentException('QR not found');
         }
         unset($this->qrs[$qrId]);
+        $transactionId = Uuid::v4()->toRfc4122();
+        $payment = new Payment($transactionId, $qrId, $userId, Payment::STATUS_SUCCESS);
+        $this->payments[$transactionId] = $payment;
+
         return [
-            'transactionId' => Uuid::v4()->toRfc4122(),
-            'status' => 'SUCCESS',
+            'transactionId' => $transactionId,
+            'status' => $payment->getStatus(),
         ];
     }
 
     public function recharge(string $userId, float $amount): array
     {
-        $balance = ($this->balances[$userId] ?? 0) + $amount;
+        $balance = $this->balances[$userId] ?? new UserBalance($userId);
+        $balance->add($amount);
         $this->balances[$userId] = $balance;
+
         return [
             'userId' => $userId,
-            'newBalance' => $balance,
+            'newBalance' => $balance->getBalance(),
         ];
     }
 }
