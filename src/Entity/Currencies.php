@@ -19,28 +19,28 @@ class Currencies
     #[ORM\Column(name: 'id', type: 'integer')]
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'AUTO')]
-    #[Groups(['api_key:write'])]
+    #[Groups(['api_key:write', 'merchants:read'])]
     private $id;
 
     /**
      * @var string
      */
     #[ORM\Column(name: 'zone', type: 'string', length: 100, nullable: true)]
-    #[Groups(['api_key:write'])]
+    #[Groups(['api_key:write', 'merchants:read'])]
     private $zone;
 
     /**
      * @var string
      */
     #[ORM\Column(name: 'abbreviation', type: 'string', length: 5, nullable: true)]
-    #[Groups(['api_key:write'])]
+    #[Groups(['api_key:write', 'merchants:read'])]
     private $abbreviation;
 
     /**
      * @var bool
      */
     #[ORM\Column(name: 'enabled', type: 'integer', nullable: false)]
-    #[Groups(['api_key:write'])]
+    #[Groups(['api_key:write', 'merchants:read'])]
     private $enabled;
 
     /**
@@ -53,7 +53,7 @@ class Currencies
      * @var string
      */
     #[ORM\Column(name: 'symbol', type: 'string', length: 5, nullable: true)]
-    #[Groups(['api_key:write'])]
+    #[Groups(['api_key:write', 'merchants:read'])]
     private $symbol;
 
     // --- Getters and setters ---//

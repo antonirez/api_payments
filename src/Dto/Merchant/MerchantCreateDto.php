@@ -7,18 +7,18 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 class MerchantCreateDto
 {
-    #[Assert\NotBlank(message: 'El nombre no puede estar vacío')]
+    #[Assert\NotBlank(message: 'Name cannot be blank.')]
     #[Assert\Length(
         max: 255,
-        maxMessage: 'El nombre no puede exceder {{ limit }} caracteres'
+        maxMessage: 'Name cannot exceed {{ limit }} characters.'
     )]
     #[Groups(['merchants:write'])]
     public string $name;
 
-    #[Assert\NotNull(message: 'La configuración es obligatoria')]
+    #[Assert\NotNull(message: 'Configuration is required.')]
     #[Assert\Type(
         type: 'array',
-        message: 'La configuración debe ser un array asociativo'
+        message: 'Configuration must be an associative array.'
     )]
     #[Groups(['merchants:write'])]
     public array $config;

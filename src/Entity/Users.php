@@ -15,8 +15,7 @@ class Users implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    #[Groups(['users'])]
-    private ?string $id;
+    private $id;
 
     #[ORM\Column(type: 'string', length: 180, unique: true)]
     #[Groups(['users'])]
@@ -28,6 +27,10 @@ class Users implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string')]
     private string $password;
 
+    public function getId(): string
+    {
+        return $this->id;
+    }
 
     public function getEmail(): string
     {

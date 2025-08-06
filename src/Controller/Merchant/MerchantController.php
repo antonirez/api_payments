@@ -2,35 +2,25 @@
 
 namespace App\Controller\Merchant;
 
-use App\Dto\User\UserRegistrationDto;
+use App\Controller\CheckApiKeyController;
+use App\Controller\CoreController;
+use App\Dto\Merchant\MerchantCreateDto;
 use App\Service\Merchant\MerchantService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Serializer\SerializerInterface;
 use App\Validator\ValidatorHandler;
 
-class MerchantController
+class MerchantController extends CoreController implements CheckApiKeyController
 {
-    private MerchantService $merchantService;
-    private SerializerInterface $serializer;
-
-    public function __construct(
-        MerchantService $merchantService,
-        SerializerInterface $serializer,
-    ) {
-        $this->merchantService = $merchantService;
-        $this->serializer = $serializer;
-    }
-
     #[Route('/merchant/create', name: 'app_merchant_create', methods: ['POST'])]
-    public function create(Request $request, ValidatorHandler $validator): JsonResponse
+    public function create(Request $request, ValidatorHandler $validator, MerchantService $service): JsonResponse
     {
         $dto = $this->serializer->deserialize(
             $request->getContent(),
-            UserRegistrationDto::class,
+            MerchantCreateDto::class,
             'json',
-            ['groups' => ['users:write']]
+            ['groups' => ['merchants:write']]
         );
 
         $errors = $validator->validate($dto);
@@ -38,8 +28,8 @@ class MerchantController
             return new JsonResponse(['errors' => $errors], JsonResponse::HTTP_BAD_REQUEST);
         }
 
-        $user = $this->userService->register($dto);
-        $response = json_decode($this->serializer->serialize($user, 'json', ['groups' => ['users']]), true);
+        $merchant = $service->create($this->em, $this->api_key, $dto);
+        $response = json_decode($this->serializer->serialize($merchant, 'json', ['groups' => ['merchants:write']]), true);
 
         return new JsonResponse($response, JsonResponse::HTTP_CREATED);
     }

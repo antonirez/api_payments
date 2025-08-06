@@ -26,7 +26,7 @@ class ApiKeys
     private $users;
 
     #[ORM\ManyToOne(targetEntity: Currencies::class, inversedBy: 'apiKeys', cascade: ['persist'])]
-    #[Groups(['api_key:write'])]
+    #[Groups(['api_key:write', 'merchants:read'])]
     private $currency;
 
     /**
