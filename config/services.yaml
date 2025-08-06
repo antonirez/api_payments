@@ -25,5 +25,9 @@ services:
         tags: [ 'controller.service_arguments' ]
         public: true
 
+    App\EventListener\CheckApiListener:
+        tags:
+            - { name: kernel.event_listener, event: kernel.request, method: onKernelRequest, priority: 8 }
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

@@ -10,44 +10,62 @@ use App\Repository\PaymentsRepository;
 /**
  * Payments.
  */
-#[ORM\Table(name: 'payments')]
 #[ORM\Entity(repositoryClass: PaymentsRepository::class)]
+#[ORM\Table(name: 'payments')]
 class Payments
 {
-    public const STATUS_SUCCESS = 'SUCCESS';
-    public const STATUS_FAILED = 'FAILED';
+    public const STATUS_SUCCESS  = 'SUCCESS';
+    public const STATUS_FAILED   = 'FAILED';
+    public const STATUS_CANCELED = 'CANCELED';
 
     #[ORM\Id]
     #[ORM\Column(name: 'transaction_id', type: 'guid')]
     #[ORM\GeneratedValue(strategy: 'NONE')]
-    #[Groups(['payments'])]
+    #[Groups(['payments:read', 'payments:write'])]
     private string $transactionId;
 
     #[ORM\OneToOne(targetEntity: QRCode::class)]
     #[ORM\JoinColumn(name: 'qr_id', referencedColumnName: 'id', nullable: false)]
-    #[Groups(['payments'])]
+    #[Groups(['payments:read', 'payments:write'])]
     private QRCode $qr;
 
-    #[ORM\ManyToOne(targetEntity: Clients::class)]
-    #[ORM\JoinColumn(name: 'client_id', referencedColumnName: 'id', nullable: false)]
-    #[Groups(['payments'])]
-    private Clients $client;
+    #[ORM\ManyToOne(targetEntity: Merchants::class)]
+    #[ORM\JoinColumn(name: 'merchant_id', referencedColumnName: 'id', nullable: false)]
+    #[Groups(['payments:read', 'payments:write'])]
+    private Merchants $merchant;
+
+    #[ORM\ManyToOne(targetEntity: UserBalance::class)]
+    #[ORM\JoinColumn(name: 'user_balance_id', referencedColumnName: 'id', nullable: false)]
+    #[Groups(['payments:read', 'payments:write'])]
+    private UserBalance $userBalance;
 
     #[ORM\Column(type: 'string', length: 20)]
-    #[Groups(['payments'])]
+    #[Groups(['payments:read', 'payments:write'])]
     private string $status;
 
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
-    #[Groups(['payments'])]
+    #[Groups(['payments:read'])]
     private DateTimeImmutable $createdAt;
 
-    public function __construct(string $transactionId, QRCode $qr, Clients $client, string $status)
-    {
+    #[ORM\Column(name: 'expired_at', type: 'datetime_immutable', nullable: true)]
+    #[Groups(['payments:read', 'payments:write'])]
+    private ?DateTimeImmutable $expiredAt = null;
+
+    public function __construct(
+        string $transactionId,
+        QRCode $qr,
+        Merchants $merchant,
+        UserBalance $userBalance,
+        string $status,
+        ?DateTimeImmutable $expiredAt = null
+    ) {
         $this->transactionId = $transactionId;
-        $this->qr = $qr;
-        $this->client = $client;
-        $this->status = $status;
-        $this->createdAt = new DateTimeImmutable();
+        $this->qr            = $qr;
+        $this->merchant      = $merchant;
+        $this->userBalance   = $userBalance;
+        $this->status        = $status;
+        $this->createdAt     = new DateTimeImmutable();
+        $this->expiredAt     = $expiredAt;
     }
 
     public function getTransactionId(): string
@@ -63,19 +81,28 @@ class Payments
     public function setQr(QRCode $qr): self
     {
         $this->qr = $qr;
-
         return $this;
     }
 
-    public function getClient(): Clients
+    public function getMerchant(): Merchants
     {
-        return $this->client;
+        return $this->merchant;
     }
 
-    public function setClient(Clients $client): self
+    public function setMerchant(Merchants $merchant): self
     {
-        $this->client = $client;
+        $this->merchant = $merchant;
+        return $this;
+    }
 
+    public function getUserBalance(): UserBalance
+    {
+        return $this->userBalance;
+    }
+
+    public function setUserBalance(UserBalance $userBalance): self
+    {
+        $this->userBalance = $userBalance;
         return $this;
     }
 
@@ -87,12 +114,22 @@ class Payments
     public function setStatus(string $status): self
     {
         $this->status = $status;
-
         return $this;
     }
 
     public function getCreatedAt(): DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function getExpiredAt(): ?DateTimeImmutable
+    {
+        return $this->expiredAt;
+    }
+
+    public function setExpiredAt(?DateTimeImmutable $expiredAt): self
+    {
+        $this->expiredAt = $expiredAt;
+        return $this;
     }
 }

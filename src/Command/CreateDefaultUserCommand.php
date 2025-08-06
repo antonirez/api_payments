@@ -42,7 +42,7 @@ class CreateDefaultUserCommand extends Command
         $existing = $repo->findOneBy(['email' => $email]);
 
         if ($existing) {
-            $output->writeln("<comment>Usuario '\$email' ya existe. No se crea.</comment>");
+            $output->writeln("<comment>El usuario {$email} ya existe..</comment>");
             return Command::SUCCESS;
         }
 
@@ -55,7 +55,7 @@ class CreateDefaultUserCommand extends Command
         $this->em->persist($user);
         $this->em->flush();
 
-        $output->writeln("<info>Usuario por defecto '\$email' creado correctamente.</info>");
+        $output->writeln("<info>Usuario por defecto {$email} creado correctamente.</info>");
         return Command::SUCCESS;
     }
 }

@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Service;
+namespace App\Service\Payment;
 
+use App\Dto\User\BalanceRechargeDto;
 use App\Entity\Payment;
 use App\Entity\QrCode;
 use App\Entity\UserBalance;
@@ -54,7 +55,7 @@ class PaymentService
         ];
     }
 
-    public function recharge(string $userId, float $amount): array
+    public function recharge(BalanceRechargeDto $dto): array
     {
         $balance = $this->balances[$userId] ?? new UserBalance($userId);
         $balance->add($amount);

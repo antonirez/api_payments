@@ -4,22 +4,27 @@ namespace App\Service\User;
 
 use App\Dto\User\UserRegistrationDto;
 use App\Entity\Users;
+use App\Validator\Exception\ValidationException;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class UserService
 {
-    private EntityManagerInterface $em;
     private UserPasswordHasherInterface $passwordHasher;
 
-    public function __construct(EntityManagerInterface $em, UserPasswordHasherInterface $passwordHasher)
+    public function __construct(UserPasswordHasherInterface $passwordHasher)
     {
-        $this->em = $em;
         $this->passwordHasher = $passwordHasher;
     }
 
-    public function register(UserRegistrationDto $dto): Users
+    public function register(EntityManagerInterface $em, UserRegistrationDto $dto): Users
     {
+        $user = $em->getRepository(Users::class)->findOneBy(['email' => $dto->email]);
+        if (!empty($user)) {
+            throw new ValidationException(serialize(['message' => 'User exists', 'code' => JsonResponse::HTTP_BAD_REQUEST]));
+        }
+
         $user = new Users();
         $user->setEmail($dto->email);
 
@@ -30,8 +35,8 @@ class UserService
         // assign default role
         $user->setRoles(['ROLE_USER']);
 
-        $this->em->persist($user);
-        $this->em->flush();
+        $em->persist($user);
+        $em->flush();
 
         return $user;
     }
