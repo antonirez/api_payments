@@ -24,10 +24,10 @@ class Payments
     #[Groups(['payments:read', 'payments:write'])]
     private string $transactionId;
 
-    #[ORM\OneToOne(targetEntity: QRCode::class)]
+    #[ORM\OneToOne(targetEntity: QrCode::class)]
     #[ORM\JoinColumn(name: 'qr_id', referencedColumnName: 'id', nullable: false)]
     #[Groups(['payments:read', 'payments:write'])]
-    private QRCode $qr;
+    private QrCode $qr;
 
     #[ORM\ManyToOne(targetEntity: Merchants::class)]
     #[ORM\JoinColumn(name: 'merchant_id', referencedColumnName: 'id', nullable: false)]
@@ -52,11 +52,11 @@ class Payments
     private ?DateTimeImmutable $expiredAt = null;
 
     public function __construct(
-        string $transactionId,
-        QRCode $qr,
-        Merchants $merchant,
-        UserBalance $userBalance,
-        string $status,
+        string             $transactionId,
+        QrCode             $qr,
+        Merchants          $merchant,
+        UserBalance        $userBalance,
+        string             $status,
         ?DateTimeImmutable $expiredAt = null
     ) {
         $this->transactionId = $transactionId;
@@ -73,12 +73,12 @@ class Payments
         return $this->transactionId;
     }
 
-    public function getQr(): QRCode
+    public function getQr(): QrCode
     {
         return $this->qr;
     }
 
-    public function setQr(QRCode $qr): self
+    public function setQr(QrCode $qr): self
     {
         $this->qr = $qr;
         return $this;

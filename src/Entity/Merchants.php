@@ -27,7 +27,7 @@ class Merchants
     #[Groups(['merchants:read'])]
     private ApiKeys $apiKey;
 
-    #[ORM\Column(type: 'string', length: 255)]
+    #[ORM\Column(type: 'string', length: 50, nullable: false, unique: true)]
     #[Groups(['merchants:read', 'merchants:write'])]
     private string $name;
 

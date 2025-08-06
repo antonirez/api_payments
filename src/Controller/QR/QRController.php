@@ -2,30 +2,36 @@
 
 namespace App\Controller\QR;
 
-use App\Service\Payment\PaymentService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use App\Controller\CheckApiKeyController;
+use App\Controller\CoreController;
+use App\Dto\QR\QRCreateDto;
+use App\Service\QR\QRService;
+use App\Validator\ValidatorHandler;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
-class QRController extends AbstractController
+class QRController extends CoreController implements CheckApiKeyController
 {
-    public function __construct(private PaymentService $service)
-    {
-    }
-
     #[Route('/qr/create', name: 'qr_create', methods: ['POST'])]
-    public function create(Request $request): JsonResponse
+    public function create(Request $request, ValidatorHandler $validator, QRService $service): JsonResponse
     {
-        $data = $request->toArray();
-        $amount = (float) ($data['amount'] ?? 0);
-        $currency = (string) ($data['currency'] ?? '');
-        $merchantId = (string) ($data['merchantId'] ?? '');
-        if (!$amount || !$currency || !$merchantId) {
-            return new JsonResponse(['error' => 'Invalid payload'], 400);
+        $dto = $this->serializer->deserialize(
+            $request->getContent(),
+            QRCreateDto::class,
+            'json',
+            ['groups' => ['qr_create:write']]
+        );
+
+        $errors = $validator->validate($dto);
+        if (!empty($errors)) {
+            return new JsonResponse(['errors' => $errors], Response::HTTP_BAD_REQUEST);
         }
-        $response = $this->service->createQR($amount, $currency, $merchantId);
-        return new JsonResponse($response, 201);
+
+        $response = $service->createQR($this->em, $this->api_key, $dto);
+
+        return new JsonResponse($response, Response::HTTP_CREATED);
     }
 
     #[Route('/qr/{qrId}', name: 'qr_details', methods: ['GET'])]

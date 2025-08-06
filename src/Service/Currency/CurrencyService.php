@@ -36,4 +36,9 @@ class CurrencyService
         return $em->getRepository(Currencies::class)->findBy(['enabled' => true, 'removed' => false]);
     }
 
+    public function findOneByAbbreviation(EntityManagerInterface $em, string $abbreviation): ?Currencies
+    {
+        return $em->getRepository(Currencies::class)->findOneBy(['abbreviation' => $abbreviation, 'enabled' => true, 'removed' => false]);
+    }
+
 }
