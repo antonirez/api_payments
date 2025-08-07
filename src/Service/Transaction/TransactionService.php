@@ -20,7 +20,7 @@ class TransactionService
         $transaction = new Transactions();
         $transaction->setUser($user);
         $transaction->setPaymentId($payments->getId());
-        $transaction->setAmount($payments->getAmount());
+        $transaction->setAmount($payments->getAmount() * -1);
         $transaction->setPaymentMethod($payments->getMerchant()->getName());
         $transaction->setCreatedAt(new \DateTimeImmutable());
 

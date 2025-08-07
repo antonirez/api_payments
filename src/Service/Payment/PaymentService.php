@@ -47,13 +47,16 @@ class PaymentService
             $user = new UserBalances();
             $user->setUserId($dto->userId);
             $user->setApiKey($apiKey);
-            $user->setBalance($payment->getAmount() * -1);
+            $user->setBalance($payment->getAmount());
         }
 
         $payment->setUserBalance($user);
         $payment->setStatus(Payments::STATUS_CONFIRMED);
-        $balance = $user->getBalance() + $payment->getAmount(); // Payment amount is negative
-        // TODO check balance si existe
+        $balance = $user->getBalance() - $payment->getAmount();
+        // Check balance
+        if ($balance < 0) {
+            throw new ValidationException(serialize(['message' => 'There is not enough balance', 'code' => Response::HTTP_BAD_REQUEST]));
+        }
 
         $user->setBalance($balance);
 

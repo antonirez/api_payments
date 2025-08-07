@@ -65,7 +65,7 @@ class QRService
 
         $payment = new Payments();
         $payment->setCurrency($currency);
-        $payment->setAmount($dto->amount);
+        $payment->setAmount($dto->amount * -1);
         $payment->setMerchant($merchantByName);
         $payment->setCreatedAt(new \DateTimeImmutable());
         $expiresAt = new \DateTimeImmutable('+30 minutes');
