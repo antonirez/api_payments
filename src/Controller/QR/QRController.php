@@ -39,8 +39,8 @@ class QRController extends CoreController implements CheckApiKeyController
     {
         $qrCode = $service->getQRDetail($this->em, $qrId);
 
-        $response = json_decode($this->serializer->serialize($qrCode, 'json', ['groups' => ['qr_code:read']]), true);
+        $response = json_decode($this->serializer->serialize($qrCode, 'json', ['groups' => ['payments:read']]), true);
 
-        return new JsonResponse($response, JsonResponse::HTTP_CREATED);
+        return new JsonResponse($response, Response::HTTP_CREATED);
     }
 }

@@ -2,33 +2,35 @@
 
 namespace App\Controller\Payment;
 
+use App\Controller\CheckApiKeyController;
+use App\Controller\CoreController;
+use App\Dto\Payment\PaymentConfirmDto;
 use App\Service\Payment\PaymentService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use App\Validator\ValidatorHandler;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
-class PaymentController extends AbstractController
+class PaymentController extends CoreController implements CheckApiKeyController
 {
-    public function __construct(private PaymentService $service)
-    {
-    }
-
     #[Route('/payment/confirm', name: 'payment_confirm', methods: ['POST'])]
-    public function confirm(Request $request): JsonResponse
+    public function confirm(Request $request, ValidatorHandler $validator, PaymentService $service): JsonResponse
     {
-        $data = $request->toArray();
-        $qrId = (string) ($data['qrId'] ?? '');
-        $userId = (string) ($data['userId'] ?? '');
-        $signature = (string) ($data['signature'] ?? '');
-        if (!$qrId || !$userId || !$signature) {
-            return new JsonResponse(['error' => 'Invalid payload'], 400);
+        $dto = $this->serializer->deserialize(
+            $request->getContent(),
+            PaymentConfirmDto::class,
+            'json',
+            ['groups' => ['payment_confirm:write']]
+        );
+
+        $errors = $validator->validate($dto);
+        if (!empty($errors)) {
+            return new JsonResponse(['errors' => $errors], Response::HTTP_BAD_REQUEST);
         }
-        try {
-            $response = $this->service->confirmPayment($qrId, $userId, $signature);
-        } catch (\InvalidArgumentException $e) {
-            return new JsonResponse(['error' => 'QR not found'], 404);
-        }
-        return new JsonResponse($response, 200);
+
+        $response = $service->confirmPayment($this->em, $this->api_key, $dto);
+
+        return new JsonResponse($response, Response::HTTP_OK);
     }
 }

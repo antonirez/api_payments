@@ -4,12 +4,12 @@ namespace App\Service\QR;
 
 use App\Dto\QR\QRCreateDto;
 use App\Entity\ApiKeys;
+use App\Entity\Payments;
 use App\Entity\QrCode;
 use App\Service\Currency\CurrencyService;
 use App\Service\Merchant\MerchantService;
 use App\Validator\Exception\ValidationException;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 class QRService
@@ -26,12 +26,12 @@ class QRService
     /**
      * @param EntityManagerInterface $em
      * @param string $qrId
-     * @return QrCode
+     * @return Payments
      * @throws ValidationException
      */
-    public function getQRDetail(EntityManagerInterface $em, string $qrId): QrCode
+    public function getQRDetail(EntityManagerInterface $em, string $qrId): Payments
     {
-        $qrCode = $em->getRepository(QrCode::class)->findOneBy(['id' => $qrId]);
+        $qrCode = $em->getRepository(Payments::class)->findOneBy(['qrId' => $qrId]);
 
         if (!$qrCode) {
             throw new ValidationException(serialize(['message' => 'QR not found', 'code' => Response::HTTP_BAD_REQUEST]));
@@ -63,29 +63,29 @@ class QRService
             throw new ValidationException(serialize(['message' => 'Currency not match with that merchant', 'code' => Response::HTTP_NOT_FOUND]));
         }
 
-        $qrCode = new QrCode();
-        $qrCode->setCurrency($currency->getAbbreviation());
-        $qrCode->setAmount($dto->amount);
-        $qrCode->setMerchantId($merchantByName->getId());
+        $payment = new Payments();
+        $payment->setCurrency($currency);
+        $payment->setAmount($dto->amount);
+        $payment->setMerchant($merchantByName);
+        $payment->setCreatedAt(new \DateTimeImmutable());
         $expiresAt = new \DateTimeImmutable('+30 minutes');
-        $qrCode->setExpiresAt($expiresAt);
-        $em->persist($qrCode);
+        $payment->setExpiresAt($expiresAt);
+        $payment->setStatus(Payments::STATUS_INITIATED);
+        $payment->generateQrId();
+        $payment->generateSignatureSeed();
+        $em->persist($payment);
+
         $em->flush();
 
         $payload = [
-            'qrId'       => $qrCode->getId(),
-            'currency'   => $qrCode->getCurrency(),
-            'amount'     => $qrCode->getAmount(),
+            'qrId' => $payment->getQrId(),
         ];
 
         $qrCodeString = json_encode($payload);
 
         return [
-            'qrId'          => $qrCode->getId(),
-            'qrCodeString'  => $qrCodeString,
-            'expiresAt'     => $expiresAt->format(\DateTime::ATOM)
+            'qrCodeString' => $qrCodeString,
+            'expiresAt' => $expiresAt->format(\DateTime::ATOM)
         ];
     }
-
-
 }

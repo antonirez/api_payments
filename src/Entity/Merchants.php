@@ -19,7 +19,7 @@ class Merchants
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\Column(type: 'guid', unique: true)]
     #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    #[Groups(['merchants:read', 'merchants:write'])]
+    #[Groups(['merchants:read', 'merchants:write', 'payments:read'])]
     private ?string $id = null;
 
     #[ORM\ManyToOne(targetEntity: ApiKeys::class, inversedBy: 'merchants', cascade: ['persist'])]
@@ -28,7 +28,7 @@ class Merchants
     private ApiKeys $apiKey;
 
     #[ORM\Column(type: 'string', length: 50, nullable: false, unique: true)]
-    #[Groups(['merchants:read', 'merchants:write'])]
+    #[Groups(['merchants:read', 'merchants:write', 'payments:read'])]
     private string $name;
 
     /** Encrypted JSON stored in the same `config` column */
@@ -74,7 +74,7 @@ class Merchants
     {
         $json = json_encode($config);
         $key = base64_decode(getenv('MERCHANT_CONFIG_KEY'));
-        $iv  = random_bytes(openssl_cipher_iv_length('aes-256-cbc'));
+        $iv = random_bytes(openssl_cipher_iv_length('aes-256-cbc'));
         $cipherText = openssl_encrypt($json, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv);
         $this->config = base64_encode($iv . $cipherText);
 
@@ -90,7 +90,7 @@ class Merchants
         $data = base64_decode($this->config);
         $key = base64_decode(getenv('MERCHANT_CONFIG_KEY'));
         $ivLength = openssl_cipher_iv_length('aes-256-cbc');
-        $iv        = substr($data, 0, $ivLength);
+        $iv = substr($data, 0, $ivLength);
         $cipherText = substr($data, $ivLength);
         $json = openssl_decrypt($cipherText, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv);
 

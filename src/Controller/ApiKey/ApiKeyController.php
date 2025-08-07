@@ -8,6 +8,7 @@ use App\Service\ApiKeys\ApiKeysService;
 use App\Validator\ValidatorHandler;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
 class ApiKeyController extends CoreController
@@ -24,12 +25,12 @@ class ApiKeyController extends CoreController
 
         $errors = $validator->validate($dto);
         if (!empty($errors)) {
-            return new JsonResponse(['errors' => $errors], JsonResponse::HTTP_BAD_REQUEST);
+            return new JsonResponse(['errors' => $errors], Response::HTTP_BAD_REQUEST);
         }
 
         $apiKey = $service->create($this->em, $dto);
         $response = json_decode($this->serializer->serialize($apiKey, 'json', ['groups' => ['api_key:write']]), true);
 
-        return new JsonResponse($response, JsonResponse::HTTP_CREATED);
+        return new JsonResponse($response, Response::HTTP_CREATED);
     }
 }

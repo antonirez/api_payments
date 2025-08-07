@@ -6,6 +6,7 @@ use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\PaymentsRepository;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Payments.
@@ -14,73 +15,97 @@ use App\Repository\PaymentsRepository;
 #[ORM\Table(name: 'payments')]
 class Payments
 {
-    public const STATUS_SUCCESS  = 'SUCCESS';
-    public const STATUS_FAILED   = 'FAILED';
+    public const STATUS_INITIATED = 'INITIATED';
+    public const STATUS_CONFIRMED = 'CONFIRMED';
+    public const STATUS_EXPIRED = 'EXPIRED';
     public const STATUS_CANCELED = 'CANCELED';
 
     #[ORM\Id]
-    #[ORM\Column(name: 'transaction_id', type: 'guid')]
-    #[ORM\GeneratedValue(strategy: 'NONE')]
-    #[Groups(['payments:read', 'payments:write'])]
-    private string $transactionId;
+    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
+    #[ORM\Column(type: 'guid', unique: true)]
+    #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
+    #[Groups(['payments:write'])]
+    private ?string $id = null;
 
-    #[ORM\OneToOne(targetEntity: QrCode::class)]
-    #[ORM\JoinColumn(name: 'qr_id', referencedColumnName: 'id', nullable: false)]
+    /**
+     * Unique QR identifier, auto-generated UUID4
+     */
+    #[ORM\Column(name: 'qr_id', type: 'guid', unique: true)]
+    #[Groups(['payments:write'])]
+    private ?string $qrId = null;
+
+    #[ORM\Column(type: 'float')]
     #[Groups(['payments:read', 'payments:write'])]
-    private QrCode $qr;
+    private float $amount;
+
+    #[ORM\ManyToOne(targetEntity: Currencies::class)]
+    #[ORM\JoinColumn(name: 'currency_id', referencedColumnName: 'id', nullable: false)]
+    #[Groups(['payments:write', 'payments:read'])]
+    private Currencies $currency;
 
     #[ORM\ManyToOne(targetEntity: Merchants::class)]
     #[ORM\JoinColumn(name: 'merchant_id', referencedColumnName: 'id', nullable: false)]
     #[Groups(['payments:read', 'payments:write'])]
     private Merchants $merchant;
 
-    #[ORM\ManyToOne(targetEntity: UserBalance::class)]
-    #[ORM\JoinColumn(name: 'user_balance_id', referencedColumnName: 'id', nullable: false)]
-    #[Groups(['payments:read', 'payments:write'])]
-    private UserBalance $userBalance;
+    #[ORM\ManyToOne(targetEntity: UserBalances::class)]
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: true)]
+    #[Groups(['payments:write'])]
+    private UserBalances $userBalance;
 
     #[ORM\Column(type: 'string', length: 20)]
-    #[Groups(['payments:read', 'payments:write'])]
+    #[Groups(['payments:write'])]
     private string $status;
 
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
-    #[Groups(['payments:read'])]
     private DateTimeImmutable $createdAt;
 
-    #[ORM\Column(name: 'expired_at', type: 'datetime_immutable', nullable: true)]
+    #[ORM\Column(name: 'expires_at', type: 'datetime_immutable', nullable: true)]
     #[Groups(['payments:read', 'payments:write'])]
-    private ?DateTimeImmutable $expiredAt = null;
+    private ?DateTimeImmutable $expiresAt = null;
 
-    public function __construct(
-        string             $transactionId,
-        QrCode             $qr,
-        Merchants          $merchant,
-        UserBalance        $userBalance,
-        string             $status,
-        ?DateTimeImmutable $expiredAt = null
-    ) {
-        $this->transactionId = $transactionId;
-        $this->qr            = $qr;
-        $this->merchant      = $merchant;
-        $this->userBalance   = $userBalance;
-        $this->status        = $status;
-        $this->createdAt     = new DateTimeImmutable();
-        $this->expiredAt     = $expiredAt;
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Groups(['payments:read', 'payments:write'])]
+    private string $signatureSeed;
+
+    public function generateQrId(): void
+    {
+        if (null === $this->qrId) {
+            $this->qrId = Uuid::v4()->toRfc4122();
+        }
     }
 
-    public function getTransactionId(): string
+    public function getId(): string
     {
-        return $this->transactionId;
+        return $this->id;
     }
 
-    public function getQr(): QrCode
+    public function getQrId(): string
     {
-        return $this->qr;
+        return $this->qrId;
     }
 
-    public function setQr(QrCode $qr): self
+    public function getAmount(): float
     {
-        $this->qr = $qr;
+        return $this->amount;
+    }
+
+    public function setAmount(float $amount): self
+    {
+        $this->amount = $amount;
+
+        return $this;
+    }
+
+    public function getCurrency(): ?Currencies
+    {
+        return $this->currency;
+    }
+
+    public function setCurrency(?Currencies $currency): static
+    {
+        $this->currency = $currency;
+
         return $this;
     }
 
@@ -95,12 +120,12 @@ class Payments
         return $this;
     }
 
-    public function getUserBalance(): UserBalance
+    public function getUserBalance(): UserBalances
     {
         return $this->userBalance;
     }
 
-    public function setUserBalance(UserBalance $userBalance): self
+    public function setUserBalance(UserBalances $userBalance): self
     {
         $this->userBalance = $userBalance;
         return $this;
@@ -122,14 +147,48 @@ class Payments
         return $this->createdAt;
     }
 
-    public function getExpiredAt(): ?DateTimeImmutable
+    public function setCreatedAt(?DateTimeImmutable $createdAt): self
     {
-        return $this->expiredAt;
+        $this->createdAt = $createdAt;
+        return $this;
     }
 
-    public function setExpiredAt(?DateTimeImmutable $expiredAt): self
+    public function getExpiresAt(): ?DateTimeImmutable
     {
-        $this->expiredAt = $expiredAt;
+        return $this->expiresAt;
+    }
+
+    public function setExpiresAt(?DateTimeImmutable $expiresAt): self
+    {
+        $this->expiresAt = $expiresAt;
         return $this;
+    }
+
+    public function getSignatureSeed(): string
+    {
+        return $this->signatureSeed;
+    }
+
+    public function generateSignatureSeed(): void
+    {
+        $secret = base64_decode($_ENV['APP_SECRET']);
+        $payload = sprintf('%s', $this->qrId);
+
+        $mac = hash_hmac('sha256', $payload, $secret, true);
+
+        $this->signatureSeed = base64_encode($mac);
+    }
+
+    /**
+     * Verify the provided signature seed matches the stored one
+     */
+    public function verifySignature(string $receivedSeed): bool
+    {
+        $secret = base64_decode($_ENV['APP_SECRET']);
+        $payload = sprintf('%s', $this->qrId);
+
+        $expected = hash_hmac('sha256', $payload, $secret, true);
+
+        return hash_equals($expected, base64_decode($receivedSeed));
     }
 }

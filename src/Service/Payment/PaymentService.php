@@ -2,68 +2,72 @@
 
 namespace App\Service\Payment;
 
-use App\Dto\User\BalanceRechargeDto;
-use App\Entity\Payment;
-use App\Entity\QrCode;
-use App\Entity\UserBalance;
-use Symfony\Component\Uid\Uuid;
+use App\Dto\Payment\PaymentConfirmDto;
+use App\Entity\ApiKeys;
+use App\Entity\Payments;
+use App\Entity\UserBalances;
+use App\Service\Transaction\TransactionService;
+use App\Service\User\UserBalanceService;
+use App\Validator\Exception\ValidationException;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\Response;
 
 class PaymentService
 {
-    /** @var array<string, QrCode> */
-    private array $qrs = [];
+    private UserBalanceService $userBalanceService;
+    private TransactionService $transactionService;
 
-    /** @var array<string, UserBalance> */
-    private array $balances = [];
-
-    /** @var array<string, Payment> */
-    private array $payments = [];
-
-    public function createQR(float $amount, string $currency, string $merchantId): array
+    public function __construct(UserBalanceService $userBalanceService, TransactionService $transactionService)
     {
-        $qrId = Uuid::v4()->toRfc4122();
-        $expiresAt = new \DateTimeImmutable('+5 minutes');
-        $qr = new QrCode($qrId, $amount, $currency, $merchantId, $expiresAt);
-        $this->qrs[$qrId] = $qr;
-
-        return [
-            'qrId' => $qrId,
-            'qrCodeString' => json_encode($qr->toPayload(), JSON_THROW_ON_ERROR),
-            'expiresAt' => $expiresAt->format(DATE_ATOM),
-        ];
+        $this->userBalanceService = $userBalanceService;
+        $this->transactionService = $transactionService;
     }
 
-    public function getQR(string $qrId): ?array
+    private function getPaymentToConfirm(EntityManagerInterface $em, string $qrId, string $signatureSeed): Payments
     {
-        return isset($this->qrs[$qrId]) ? $this->qrs[$qrId]->toPayload() : null;
-    }
+        $payment = $em->getRepository(Payments::class)->findOneBy(['qrId' => $qrId, 'signatureSeed' => $signatureSeed, 'status' => Payments::STATUS_INITIATED]);
 
-    public function confirmPayment(string $qrId, string $userId, string $signature): array
-    {
-        // In a real implementation, signature should be verified.
-        if (!isset($this->qrs[$qrId])) {
-            throw new \InvalidArgumentException('QR not found');
+        if (!$payment) {
+            throw new ValidationException(serialize(['message' => 'Payment not found', 'code' => Response::HTTP_BAD_REQUEST]));
         }
-        unset($this->qrs[$qrId]);
-        $transactionId = Uuid::v4()->toRfc4122();
-        $payment = new Payment($transactionId, $qrId, $userId, Payment::STATUS_SUCCESS);
-        $this->payments[$transactionId] = $payment;
+
+        return $payment;
+
+    }
+
+    public function confirmPayment(EntityManagerInterface $em, ApiKeys $apiKey, PaymentConfirmDto $dto): array
+    {
+        $payment = $this->getPaymentToConfirm($em, $dto->qrId, $dto->signature);
+        if (!$payment->verifySignature($dto->signature)) {
+            throw new ValidationException(serialize(['message' => 'Invalid payment signature', 'code' => Response::HTTP_BAD_REQUEST]));
+        }
+
+        $user = $this->userBalanceService->findOneBy($em, $apiKey, $dto->userId);
+        if (!$user) {
+            $user = new UserBalances();
+            $user->setUserId($dto->userId);
+            $user->setApiKey($apiKey);
+            $user->setBalance($payment->getAmount() * -1);
+        }
+
+        $payment->setUserBalance($user);
+        $payment->setStatus(Payments::STATUS_CONFIRMED);
+        $balance = $user->getBalance() + $payment->getAmount(); // Payment amount is negative
+        // TODO check balance si existe
+
+        $user->setBalance($balance);
+
+        // Create transaction
+        $transaction = $this->transactionService->createTransaction($em, $user, $payment);
+
+        $em->persist($user);
+        $em->persist($payment);
+        $em->flush();
 
         return [
-            'transactionId' => $transactionId,
+            'transactionId' => $transaction->getId(),
             'status' => $payment->getStatus(),
         ];
     }
 
-    public function recharge(BalanceRechargeDto $dto): array
-    {
-        $balance = $this->balances[$userId] ?? new UserBalance($userId);
-        $balance->add($amount);
-        $this->balances[$userId] = $balance;
-
-        return [
-            'userId' => $userId,
-            'newBalance' => $balance->getBalance(),
-        ];
-    }
 }

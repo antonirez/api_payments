@@ -26,14 +26,14 @@ class Currencies
      * @var string
      */
     #[ORM\Column(name: 'zone', type: 'string', length: 100, nullable: true)]
-    #[Groups(['api_key:write', 'merchants:read'])]
+    #[Groups(['api_key:write', 'merchants:read', 'payments:read'])]
     private $zone;
 
     /**
      * @var string
      */
     #[ORM\Column(name: 'abbreviation', type: 'string', length: 5, nullable: true)]
-    #[Groups(['api_key:write', 'merchants:read'])]
+    #[Groups(['api_key:write', 'merchants:read', 'payments:read'])]
     private $abbreviation;
 
     /**
@@ -53,7 +53,7 @@ class Currencies
      * @var string
      */
     #[ORM\Column(name: 'symbol', type: 'string', length: 5, nullable: true)]
-    #[Groups(['api_key:write', 'merchants:read'])]
+    #[Groups(['api_key:write', 'merchants:read', 'payments:read'])]
     private $symbol;
 
     // --- Getters and setters ---//

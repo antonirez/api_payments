@@ -8,13 +8,12 @@ use App\Validator\ValidatorHandler;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 
-
 class BalanceController extends AbstractController
 {
-
     private PaymentService $paymentService;
     private SerializerInterface $serializer;
     public function __construct(
@@ -37,10 +36,10 @@ class BalanceController extends AbstractController
 
         $errors = $validator->validate($dto);
         if (!empty($errors)) {
-            return new JsonResponse(['errors' => $errors], JsonResponse::HTTP_BAD_REQUEST);
+            return new JsonResponse(['errors' => $errors], Response::HTTP_BAD_REQUEST);
         }
 
         $response = $this->paymentService->recharge($dto);
-        return new JsonResponse($response, 200);
+        return new JsonResponse($response, Response::HTTP_OK);
     }
 }
