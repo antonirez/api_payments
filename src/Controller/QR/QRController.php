@@ -35,12 +35,12 @@ class QRController extends CoreController implements CheckApiKeyController
     }
 
     #[Route('/qr/{qrId}', name: 'qr_details', methods: ['GET'])]
-    public function details(string $qrId): JsonResponse
+    public function details(string $qrId, QRService $service): JsonResponse
     {
-        $qr = $this->service->getQR($qrId);
-        if (!$qr) {
-            return new JsonResponse(['error' => 'QR not found'], 404);
-        }
-        return new JsonResponse($qr, 200);
+        $qrCode = $service->getQRDetail($this->em, $qrId);
+
+        $response = json_decode($this->serializer->serialize($qrCode, 'json', ['groups' => ['qr_code:read']]), true);
+
+        return new JsonResponse($response, JsonResponse::HTTP_CREATED);
     }
 }

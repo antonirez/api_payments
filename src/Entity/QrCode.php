@@ -18,7 +18,7 @@ class QrCode
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\Column(type: 'guid', unique: true)]
     #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    #[Groups(['qr_code:read', 'qr_code:write'])]
+    #[Groups(['qr_code:write'])]
     private ?string $id = null;
 
     #[ORM\Column(type: 'float')]

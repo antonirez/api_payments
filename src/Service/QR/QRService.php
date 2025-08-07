@@ -25,6 +25,23 @@ class QRService
 
     /**
      * @param EntityManagerInterface $em
+     * @param string $qrId
+     * @return QrCode
+     * @throws ValidationException
+     */
+    public function getQRDetail(EntityManagerInterface $em, string $qrId): QrCode
+    {
+        $qrCode = $em->getRepository(QrCode::class)->findOneBy(['id' => $qrId]);
+
+        if (!$qrCode) {
+            throw new ValidationException(serialize(['message' => 'QR not found', 'code' => Response::HTTP_BAD_REQUEST]));
+        }
+
+        return $qrCode;
+    }
+
+    /**
+     * @param EntityManagerInterface $em
      * @param ApiKeys $apiKey
      * @param QRCreateDto $dto
      * @return array
@@ -69,4 +86,6 @@ class QRService
             'expiresAt'     => $expiresAt->format(\DateTime::ATOM)
         ];
     }
+
+
 }
