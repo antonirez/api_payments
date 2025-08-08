@@ -1,33 +1,74 @@
 # Payment QR API
 
-API para generar códigos QR, confirmar pagos y recargar saldo.
+The **Payment QR API** allows you to:
+- Generate QR codes for payments.
+- Confirm completed transactions.
+- Recharge a user's balance.
 
-## Docker
+---
+
+## 🚀 Quick Start with Docker
 ```bash
 sudo make start
 ```
 
-## Creación de usuarios admin
+---
+
+## 👤 Creating Admin Users
+To create a default admin user, run:
 ```bash
 php bin/console app:create-default-user <email> <password>
 ```
 
-## Autenticación
+---
 
-La API usa tokens JWT. Para obtener un token:
+## 🔐 Authentication
 
+This API uses **JWT tokens** for authentication.
+
+**Step 1:** Request a token:
 ```bash
-curl -X POST https://localhost/v1/login -d '{"username":"user","password":"password"}' -H 'Content-Type: application/json'
+curl -X POST https://localhost/v1/login   -d '{"username":"user","password":"password"}'   -H 'Content-Type: application/json'
 ```
 
-Usa el token recibido en el header `Authorization: Bearer <token>` para acceder a los endpoints protegidos.
+**Step 2:** Use the received token in the `Authorization` header to access protected endpoints:
+```
+Authorization: Bearer <token>
+```
 
-## Endpoints
+---
 
-- `POST /v1/user/register` Genera un nuevo usuario.
-- `POST /v1/qr/create` Genera un QR de cobro.
-- `GET /v1/qr/{qrId}` Obtiene detalles de un QR.
-- `POST /v1/payment/confirm` Confirma un pago.
-- `POST /v1/balance/recharge` Recarga saldo del usuario.
+## 📌 Required Headers
+- `api-key: <string>` — Your assigned API key.
 
-Las estructuras de petición y respuesta siguen la especificación OpenAPI incluida en el enunciado.
+---
+
+## 📡 Endpoints
+
+### User Management
+- `POST /v1/user/register` — Creates a new user account.
+
+### QR Management
+- `POST /v1/qr/create` — Generates a payment QR code.
+- `GET /v1/qr/{qrId}` — Retrieves QR code details.
+
+### Payment Processing
+- `POST /v1/payment/confirm` — Confirms a payment.
+
+### Balance Management
+- `POST /v1/balance/recharge` — Recharges a user's balance.
+
+### Authentication
+- `POST /v1/login` — Retrieves the authentication token (no header api-key required).
+
+---
+
+## 🛡 Security Notes
+- Always use **HTTPS** when sending requests.
+- Store your `api-key` and JWT token securely.
+- Tokens have an expiration time; request a new one when needed.
+
+---
+
+## 📄 License
+Oaro projects

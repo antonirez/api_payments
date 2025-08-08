@@ -50,7 +50,9 @@ RUN apk --no-cache add bash nano
 FROM nginx_build as nginx_testing
 ARG APP_FOLDER
 COPY ./${APP_FOLDER} .
-RUN COMPOSER_ALLOW_SUPERUSER=1 composer install && npm install && php bin/console doctrine:schema:update --force
+RUN COMPOSER_ALLOW_SUPERUSER=1 composer install && php bin/console doctrine:schema:update --force
+RUN mkdir -p config/jwt && php bin/console lexik:jwt:generate-keypair --overwrite
+RUN if [ -f package.json ]; then npm install; fi
 RUN find . -exec chown www-data:www-data {} + \
 && find . -type d -exec chmod 755 {} + \
 && find . -type f -exec chmod 644 {} + \
@@ -71,6 +73,7 @@ USER www-data
 RUN composer install --no-dev --optimize-autoloader
 RUN if [ -f package.json ]; then npm install; fi
 RUN php bin/console doctrine:schema:update --force
+RUN mkdir -p config/jwt && php bin/console lexik:jwt:generate-keypair --overwrite
 USER root
 
 #---------------------------------------------------------------------#
@@ -88,6 +91,7 @@ USER www-data
 RUN composer install --no-dev --optimize-autoloader
 RUN if [ -f package.json ]; then npm install; fi
 RUN php bin/console doctrine:schema:update --force
+RUN mkdir -p config/jwt && php bin/console lexik:jwt:generate-keypair --overwrite
 USER root
 
 #---------------------------------------------------------------------#
