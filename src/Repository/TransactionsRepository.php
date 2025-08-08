@@ -18,24 +18,4 @@ class TransactionsRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Transactions::class);
     }
-
-    public function getBalance($filters, $user, $apikey)
-    {
-        $list = $this->createQueryBuilder('t')->select('SUM(t.amount) as balance');
-        $list->leftJoin('t.user', 'u');
-
-        $list->andWhere('u.userId=:user');
-        $list->setParameter('user', $user);
-        $list->andWhere('u.apiKey=:api_key');
-        $list->setParameter('api_key', $apikey);
-        $list->andWhere('t.balance=TRUE');
-
-        $query = $list->getQuery();
-        $balance = 0;
-        if ($query->getSingleResult()['balance'] != '') {
-            $balance = $query->getSingleResult()['balance'];
-        }
-
-        return $balance;
-    }
 }

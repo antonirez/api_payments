@@ -2,9 +2,7 @@
 
 namespace App\Validator;
 
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 class ValidatorHandler
 {

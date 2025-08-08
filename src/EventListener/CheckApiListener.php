@@ -6,6 +6,7 @@ use App\Entity\ApiKeys;
 use App\Controller\CheckApiKeyController;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 
 class CheckApiListener
@@ -35,7 +36,7 @@ class CheckApiListener
                 $data['fields'] = ['Api-Key'];
                 $data['message'] = 'Api key is required';
 
-                $response = new JsonResponse($data, 401);
+                $response = new JsonResponse($data, Response::HTTP_UNAUTHORIZED);
 
                 return $event->setResponse($response);
             }
@@ -47,7 +48,7 @@ class CheckApiListener
                 $data['fields'] = ['Api-Key'];
                 $data['message'] = 'Api key invalid';
 
-                $response = new JsonResponse($data, 401);
+                $response = new JsonResponse($data, Response::HTTP_UNAUTHORIZED);
 
                 return $event->setResponse($response);
             } else {
@@ -56,7 +57,7 @@ class CheckApiListener
                     $data['fields'] = [];
                     $data['message'] = 'Api key disabled';
 
-                    $response = new JsonResponse($data, 403);
+                    $response = new JsonResponse($data, Response::HTTP_FORBIDDEN);
 
                     return $event->setResponse($response);
                 }

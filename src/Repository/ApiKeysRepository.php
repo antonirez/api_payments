@@ -18,14 +18,4 @@ class ApiKeysRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, ApiKeys::class);
     }
-
-    public function findOneByApiKey($value)
-    {
-        return $this->createQueryBuilder('a')
-            ->andWhere('a.apiKey = :value')
-            ->setParameter('value', $value)
-            ->getQuery()
-            ->getOneOrNullResult()
-        ;
-    }
 }
