@@ -2,30 +2,20 @@
 
 namespace App\Controller\User;
 
+use App\Controller\CheckApiKeyController;
+use App\Controller\CoreController;
 use App\Dto\User\BalanceRechargeDto;
-use App\Service\Payment\PaymentService;
+use App\Service\User\UserBalanceService;
 use App\Validator\ValidatorHandler;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Serializer\SerializerInterface;
 
-class BalanceController extends AbstractController
+class BalanceController extends CoreController implements CheckApiKeyController
 {
-    private PaymentService $paymentService;
-    private SerializerInterface $serializer;
-    public function __construct(
-        PaymentService $paymentService,
-        SerializerInterface $serializer,
-    ) {
-        $this->paymentService = $paymentService;
-        $this->serializer = $serializer;
-    }
-
     #[Route('/balance/recharge', name: 'balance_recharge', methods: ['POST'])]
-    public function recharge(Request $request, ValidatorHandler $validator): JsonResponse
+    public function recharge(Request $request, ValidatorHandler $validator, UserBalanceService $service): JsonResponse
     {
         $dto = $this->serializer->deserialize(
             $request->getContent(),
@@ -39,7 +29,8 @@ class BalanceController extends AbstractController
             return new JsonResponse(['errors' => $errors], Response::HTTP_BAD_REQUEST);
         }
 
-        $response = $this->paymentService->recharge($dto);
+        $response = $service->recharge($this->em, $this->api_key, $dto);
+
         return new JsonResponse($response, Response::HTTP_OK);
     }
 }

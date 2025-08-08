@@ -8,7 +8,6 @@ use Symfony\Component\Validator\Constraints as Assert;
 class BalanceRechargeDto
 {
     #[Assert\NotBlank]
-    #[Assert\Uuid]
     #[Groups(['balance:write'])]
     public string $userId;
 

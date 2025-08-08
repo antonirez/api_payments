@@ -3,6 +3,7 @@
 namespace App\Service\Payment;
 
 use App\Dto\Payment\PaymentConfirmDto;
+use App\Dto\User\BalanceRechargeDto;
 use App\Entity\ApiKeys;
 use App\Entity\Payments;
 use App\Entity\UserBalances;
@@ -23,6 +24,13 @@ class PaymentService
         $this->transactionService = $transactionService;
     }
 
+    /**
+     * @param EntityManagerInterface $em
+     * @param string $qrId
+     * @param string $signatureSeed
+     * @return Payments
+     * @throws ValidationException
+     */
     private function getPaymentToConfirm(EntityManagerInterface $em, string $qrId, string $signatureSeed): Payments
     {
         $payment = $em->getRepository(Payments::class)->findOneBy(['qrId' => $qrId, 'signatureSeed' => $signatureSeed, 'status' => Payments::STATUS_INITIATED]);
@@ -35,6 +43,13 @@ class PaymentService
 
     }
 
+    /**
+     * @param EntityManagerInterface $em
+     * @param ApiKeys $apiKey
+     * @param PaymentConfirmDto $dto
+     * @return array
+     * @throws ValidationException
+     */
     public function confirmPayment(EntityManagerInterface $em, ApiKeys $apiKey, PaymentConfirmDto $dto): array
     {
         $payment = $this->getPaymentToConfirm($em, $dto->qrId, $dto->signature);
@@ -72,5 +87,4 @@ class PaymentService
             'status' => $payment->getStatus(),
         ];
     }
-
 }

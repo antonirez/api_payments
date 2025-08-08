@@ -2,6 +2,7 @@
 
 namespace App\Service\Transaction;
 
+use App\Dto\User\BalanceRechargeDto;
 use App\Entity\Payments;
 use App\Entity\Transactions;
 use App\Entity\UserBalances;
@@ -27,6 +28,23 @@ class TransactionService
         $em->persist($transaction);
 
         return $transaction;
+    }
+
+    /**
+     * @param EntityManagerInterface $em
+     * @param UserBalances $user
+     * @param BalanceRechargeDto $dto
+     * @return void
+     */
+    public function createBalanceTransaction(EntityManagerInterface $em, UserBalances $user, BalanceRechargeDto $dto): void
+    {
+        $transaction = new Transactions();
+        $transaction->setUser($user);
+        $transaction->setAmount($dto->amount);
+        $transaction->setPaymentMethod($dto->paymentMethod);
+        $transaction->setCreatedAt(new \DateTimeImmutable());
+
+        $em->persist($transaction);
     }
 
 }
